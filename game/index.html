@@ -34,6 +34,10 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
+    var images = [];
+    var points = [];
+    var play = [];
+    var point = 8;
     const grid = document.querySelector(".memory-grid");
     const backImageUrl =
       "https://cdn.leonardo.ai/users/fe0eef91-674f-4adb-aa53-0b1c831c4fe8/generations/f1024fa8-645a-44c4-a300-7af2205d5c89/segments/4:4:1/Lucid_Origin_I_need_a_simple_image_for_the_back_of_my_cards_16_3.jpg";
@@ -53,11 +57,14 @@
         deck.push({ ...item });
       });
 
-      shuffle(deck);
+      images = shuffle(deck);
+
+      console.log(images)
 
       deck.forEach((cardData) => {
         const card = document.createElement("div");
-        card.className = "memory-card";
+
+        card.className = "memory-card ["+cardData.id+"]";
 
         const inner = document.createElement("div");
         inner.className = "memory-card-inner";
@@ -81,11 +88,56 @@
         card.appendChild(inner);
 
         card.addEventListener("click", () => {
-          card.classList.toggle("is-flipped");
+            card.classList.toggle("is-flipped");
+            cardData['is_face_visible'] = true;
+            setTimeout(() => {
+              checkCardValidity(images, cardData);
+            }, 1000);
         });
 
         grid.appendChild(card);
       });
+    }
+
+    function isGameEnded(images) {
+
+    }
+
+    function checkCardValidity(images, image) {
+      // console.log(images)
+        if (isGameEnded()) {
+          return "end";
+        }
+        var ids = [];
+        let images_not_valid = images.filter((it) => !it.is_valid);
+        let images_to_check = images_not_valid.filter((it) => it.is_face_visible);
+        let images_valid = images_to_check.filter((i) => i.id === image.id);
+        if (images_to_check.length % 2 === 0) {
+          // document.getElementsByClassName("["+images_to_check[0].id+"]")[0].classList.toggle("is-flipped");
+          // document.getElementsByClassName("["+images_to_check[1].id+"]")[1].classList.toggle("is-flipped");
+          if (images_valid.length === 2) {
+            if (images_to_check[0].is_face_visible && images_to_check[1].is_face_visible) {
+              images_to_check[0]['is_face_visible'] = true;
+              images_to_check[0]['is_valid'] = true;
+  
+              images_to_check[1]['is_face_visible'] = true;
+              images_to_check[1]['is_valid'] = true;
+            }
+          } else {
+            document.getElementsByClassName("["+images_to_check[0].id+"]")[1].classList.remove("is-flipped");
+            document.getElementsByClassName("["+images_to_check[0].id+"]")[0].classList.remove("is-flipped");
+            document.getElementsByClassName("["+images_to_check[1].id+"]")[1].classList.remove("is-flipped");
+            document.getElementsByClassName("["+images_to_check[1].id+"]")[0].classList.remove("is-flipped");
+
+            images_to_check[0]['is_face_visible'] = false;
+            images_to_check[0]['is_valid'] = false;
+
+            images_to_check[1]['is_face_visible'] = false;
+            images_to_check[1]['is_valid'] = false;
+          }
+        }
+        // debugger;
+        return "playing";
     }
 
     fetch("../img.json")
@@ -95,8 +147,13 @@
         }
         return response.json();
       })
-      .then((images) => {
-        buildGame(images);
+      .then((im) => {
+        im.forEach((item) => {
+          item["is_valid"] = false;
+          item["is_face_visible"] = false;
+        });
+        images = im;
+        buildGame(im);
       })
       .catch((error) => {
         console.error("Erreur lors du chargement du JSON, utilisation du fallback :", error);
