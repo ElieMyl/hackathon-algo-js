@@ -178,54 +178,161 @@ document.addEventListener("DOMContentLoaded", () => {
     buildGame(images);
   };
 
-  function buildGame(images) {
-    replayButton.style.display = "none";
-    grid.innerHTML = "";
-    firstCard = null;
-    secondCard = null;
-    lockBoard = false;
-    moves = 0;
-    score = 0;
-    matchedPairs = 0;
-    totalPairs = images.length;
-    updateText();
+function buildGame(images) {
+  replayButton.style.display = "none";
+  grid.innerHTML = "";
+  firstCard = null;
+  secondCard = null;
+  lockBoard = false;
+  moves = 0;
+  score = 0;
+  matchedPairs = 0;
+  totalPairs = images.length;
+  updateText();
 
-    const allCards = [];
-    images.forEach((item) => {
-      allCards.push({ ...item });
-      allCards.push({ ...item });
-    });
+  const allCards = [];
 
-    randomPlaceImg(allCards);
+  images.forEach((item) => {
+    /* --------------------------------------------
+       CAS 1 : image + question + réponse
+       → carte1 = image + question
+       → carte2 = image + réponse
+    ----------------------------------------------*/
+    if (item.img && item.question && item.answer) {
+      allCards.push({
+        id: item.id,
+        img: item.img,
+        text: item.question,
+        type: "img_question"
+      });
 
-    allCards.forEach((cardData) => {
-      const card = document.createElement("div");
-      card.className = "memory-card";
-      card.dataset.id = cardData.id;
+      allCards.push({
+        id: item.id,
+        img: item.img,
+        text: item.answer,
+        type: "img_answer"
+      });
+    }
 
-      const inner = document.createElement("div");
-      inner.className = "memory-card-inner";
+    /* --------------------------------------------
+       CAS 2 : images uniquement
+       → 2 cartes identiques
+    ----------------------------------------------*/
+    else if (item.img && !item.question && !item.answer) {
+      allCards.push({
+        id: item.id,
+        img: item.img,
+        type: "img_only"
+      });
 
-      const front = document.createElement("div");
-      front.className = "memory-face memory-front";
-      const frontImg = document.createElement("img");
-      frontImg.src = backImageUrl;
-      front.appendChild(frontImg);
+      allCards.push({
+        id: item.id,
+        img: item.img,
+        type: "img_only"
+      });
+    }
 
-      const back = document.createElement("div");
-      back.className = "memory-face memory-back";
-      const backImg = document.createElement("img");
-      backImg.src = cardData.img;
-      back.appendChild(backImg);
+    /* --------------------------------------------
+       CAS 3 : question + réponse seulement
+       → carte1 = question
+       → carte2 = réponse
+    ----------------------------------------------*/
+    else if (!item.img && item.question && item.answer) {
+      allCards.push({
+        id: item.id,
+        text: item.question,
+        type: "question_only"
+      });
 
-      inner.appendChild(front);
-      inner.appendChild(back);
-      card.appendChild(inner);
+      allCards.push({
+        id: item.id,
+        text: item.answer,
+        type: "answer_only"
+      });
+    }
+  });
 
-      card.addEventListener("click", handleCardClick);
-      grid.appendChild(card);
-    });
-  }
+  randomPlaceImg(allCards);
+
+  /* ----------------------------------------------------------------
+     Construction visuelle des cartes selon leur type
+  ---------------------------------------------------------------- */
+  allCards.forEach((c) => {
+    const card = document.createElement("div");
+    card.className = "memory-card";
+    card.dataset.id = c.id;
+
+    const inner = document.createElement("div");
+    inner.className = "memory-card-inner";
+
+    // FRONT
+    const front = document.createElement("div");
+    front.className = "memory-face memory-front";
+    const frontImg = document.createElement("img");
+    frontImg.src = backImageUrl;
+    front.appendChild(frontImg);
+
+    // BACK
+    const back = document.createElement("div");
+    back.className = "memory-face memory-back";
+
+    /* ---------- Rendu selon type ---------- */
+
+    // CAS 1 : Carte image + question
+    if (c.type === "img_question") {
+      const img = document.createElement("img");
+      img.src = c.img;
+      const text = document.createElement("div");
+      text.className = "qa-only";
+      text.innerHTML = `<strong>${c.text}</strong>`;
+      back.appendChild(img);
+      back.appendChild(text);
+    }
+
+    // CAS 1 : Carte image + réponse
+    else if (c.type === "img_answer") {
+      const img = document.createElement("img");
+      img.src = c.img;
+      const text = document.createElement("div");
+      text.className = "qa-only";
+      text.innerHTML = `<em>${c.text}</em>`;
+      back.appendChild(img);
+      back.appendChild(text);
+    }
+
+    // CAS 2 : Image seule
+    else if (c.type === "img_only") {
+      const img = document.createElement("img");
+      img.src = c.img;
+      back.appendChild(img);
+    }
+
+    // CAS 3 : question seule
+    else if (c.type === "question_only") {
+      const text = document.createElement("div");
+      text.className = "qa-only";
+      text.innerHTML = `<strong>${c.text}</strong>`;
+      back.appendChild(text);
+    }
+
+    // CAS 3 : réponse seule
+    else if (c.type === "answer_only") {
+      const text = document.createElement("div");
+      text.className = "qa-only";
+      text.innerHTML = `<em>${c.text}</em>`;
+      back.appendChild(text);
+    }
+
+    inner.appendChild(front);
+    inner.appendChild(back);
+    card.appendChild(inner);
+
+    card.addEventListener("click", handleCardClick);
+    grid.appendChild(card);
+  });
+}
+
+
 
   // 🔥 Mode standard (sans Educentre) → charger img.json
   fetch("../img.json")
